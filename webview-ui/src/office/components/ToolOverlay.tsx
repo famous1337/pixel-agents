@@ -103,8 +103,13 @@ export function ToolOverlay({
   const selectedId = officeState.selectedAgentId;
   const hoveredId = officeState.hoveredAgentId;
 
+  // Ambient character IDs (always rendered, separate from real agents)
+  const ambientIds = [...officeState.characters.values()]
+    .filter((ch) => ch.isAmbient)
+    .map((ch) => ch.id);
+
   // All character IDs
-  const allIds = [...agents, ...subagentCharacters.map((s) => s.id)];
+  const allIds = [...agents, ...subagentCharacters.map((s) => s.id), ...ambientIds];
 
   return (
     <>
@@ -115,9 +120,10 @@ export function ToolOverlay({
         const isSelected = selectedId === id;
         const isHovered = hoveredId === id;
         const isSub = ch.isSubagent;
+        const isAmbient = !!ch.isAmbient;
 
-        // Only show for hovered or selected agents (unless always-show is on)
-        if (!alwaysShowOverlay && !isSelected && !isHovered) return null;
+        // Ambient characters always show their name; real agents only on hover/select/always-show
+        if (!isAmbient && !alwaysShowOverlay && !isSelected && !isHovered) return null;
 
         // Position above character
         const sittingOffset = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
@@ -154,10 +160,35 @@ export function ToolOverlay({
 
         // Team info
         const isTeamAgent = !!ch.teamName;
-        const teamRoleLabel = ch.isTeamLead ? 'LEAD' : ch.agentName || null;
+        const teamRoleLabel = ch.isTeamLead
+          ? 'LEAD'
+          : ch.agentName || (!isSub && !ch.teamName && !isAmbient ? 'AI' : null);
         const totalTokens = ch.inputTokens + ch.outputTokens;
         const tokenRatio = totalTokens / MAX_CONTEXT_TOKENS;
         const hasExtraLines = !!(ch.folderName || teamRoleLabel);
+
+        // Ambient characters: show only their name, dimmed when not hovered
+        if (isAmbient) {
+          return (
+            <div
+              key={id}
+              className="absolute flex flex-col items-center -translate-x-1/2"
+              style={{
+                left: screenX,
+                top: screenY - 28,
+                pointerEvents: 'none',
+                opacity: isHovered ? 1 : 0.55,
+                zIndex: 40,
+              }}
+            >
+              <div className="flex items-center border-border px-8 pt-2 pb-4 pixel-panel whitespace-nowrap">
+                <span className="leading-none" style={{ fontSize: '22px', color: TEAM_ROLE_COLOR }}>
+                  {ch.agentName}
+                </span>
+              </div>
+            </div>
+          );
+        }
 
         return (
           <div

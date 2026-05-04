@@ -1,4 +1,5 @@
 import {
+  AMBIENT_ID_OFFSET,
   AUTO_ON_FACING_DEPTH,
   AUTO_ON_SIDE_DEPTH,
   CHARACTER_HIT_HALF_WIDTH,
@@ -10,6 +11,7 @@ import {
   HUE_SHIFT_RANGE_DEG,
   INACTIVE_SEAT_TIMER_MIN_SEC,
   INACTIVE_SEAT_TIMER_RANGE_SEC,
+  TONONE_TEAM_SEATS,
   WAITING_BUBBLE_DURATION_SEC,
 } from '../../constants.js';
 import { getAnimationFrames, getCatalogEntry, getOnStateType } from '../layout/furnitureCatalog.js';
@@ -53,6 +55,9 @@ export class OfficeState {
   /** Reverse lookup: sub-agent character ID → parent info */
   subagentMeta: Map<number, { parentAgentId: number; parentToolId: string }> = new Map();
   private nextSubagentId = -1;
+  /** Maps seat-tonone-* UID → ambient character ID */
+  private ambientCharacterSeats = new Map<string, number>();
+  private nextAmbientId = AMBIENT_ID_OFFSET;
 
   constructor(layout?: OfficeLayout) {
     this.layout = layout || createDefaultLayout();
@@ -66,6 +71,12 @@ export class OfficeState {
   /** Rebuild all derived state from a new layout. Reassigns existing characters.
    *  @param shift Optional pixel shift to apply when grid expands left/up */
   rebuildFromLayout(layout: OfficeLayout, shift?: { col: number; row: number }): void {
+    // Remove ambient characters before seat reassignment so real agents can reclaim named seats
+    for (const ambientId of this.ambientCharacterSeats.values()) {
+      this.characters.delete(ambientId);
+    }
+    this.ambientCharacterSeats.clear();
+
     this.layout = layout;
     this.tileMap = layoutToTileMap(layout);
     this.seats = layoutToSeats(layout.furniture);
@@ -139,6 +150,9 @@ export class OfficeState {
         this.relocateCharacterToWalkable(ch);
       }
     }
+
+    // Spawn ambient team members for any unclaimed tonone seats
+    this.spawnAmbientTeam();
   }
 
   /** Move a character to a random walkable tile */
@@ -260,6 +274,40 @@ export class OfficeState {
     return { palette, hueShift };
   }
 
+  /** Spawn ambient characters for all unoccupied seat-tonone-* seats in the current layout. */
+  spawnAmbientTeam(): void {
+    for (const [seatUid, name] of Object.entries(TONONE_TEAM_SEATS)) {
+      if (!this.seats.has(seatUid)) continue;
+      const seat = this.seats.get(seatUid)!;
+      if (seat.assigned) continue;
+      const existingId = this.ambientCharacterSeats.get(seatUid);
+      if (existingId !== undefined && this.characters.has(existingId)) continue;
+      this.spawnAmbientCharacter(seatUid, name, seat);
+    }
+  }
+
+  private spawnAmbientCharacter(seatUid: string, name?: string, seat?: Seat): void {
+    const displayName = name ?? TONONE_TEAM_SEATS[seatUid];
+    if (!displayName) return;
+    const resolvedSeat = seat ?? this.seats.get(seatUid);
+    if (!resolvedSeat || resolvedSeat.assigned) return;
+
+    let id = this.ambientCharacterSeats.get(seatUid);
+    if (id === undefined) {
+      id = this.nextAmbientId++;
+      this.ambientCharacterSeats.set(seatUid, id);
+    }
+
+    resolvedSeat.assigned = true;
+    const { palette, hueShift } = this.pickDiversePalette();
+    const ch = createCharacter(id, palette, seatUid, resolvedSeat, hueShift);
+    ch.isAmbient = true;
+    ch.isActive = false;
+    ch.agentName = displayName;
+    ch.seatTimer = INACTIVE_SEAT_TIMER_MIN_SEC + Math.random() * INACTIVE_SEAT_TIMER_RANGE_SEC;
+    this.characters.set(id, ch);
+  }
+
   addAgent(
     id: number,
     preferredPalette?: number,
@@ -285,6 +333,17 @@ export class OfficeState {
     let seatId: string | null = null;
     if (preferredSeatId && this.seats.has(preferredSeatId)) {
       const seat = this.seats.get(preferredSeatId)!;
+      if (seat.assigned) {
+        // Silently displace an ambient character holding this seat
+        const ambientId = this.ambientCharacterSeats.get(preferredSeatId);
+        if (ambientId !== undefined) {
+          const ambientCh = this.characters.get(ambientId);
+          if (ambientCh?.isAmbient) {
+            this.characters.delete(ambientId);
+            seat.assigned = false;
+          }
+        }
+      }
       if (!seat.assigned) {
         seatId = preferredSeatId;
       }
@@ -325,6 +384,7 @@ export class OfficeState {
   removeAgent(id: number): void {
     const ch = this.characters.get(id);
     if (!ch) return;
+    if (ch.isAmbient) return; // ambient characters are managed separately
     if (ch.matrixEffect === 'despawn') return; // already despawning
     // Free seat and clear selection immediately
     if (ch.seatId) {
@@ -753,9 +813,17 @@ export class OfficeState {
         }
       }
     }
-    // Remove characters that finished despawn
+    // Remove characters that finished despawn; respawn ambient if they held a tonone seat
+    const seatsToRespawn: string[] = [];
     for (const id of toDelete) {
+      const ch = this.characters.get(id);
+      if (ch && !ch.isAmbient && ch.seatId && TONONE_TEAM_SEATS[ch.seatId]) {
+        seatsToRespawn.push(ch.seatId);
+      }
       this.characters.delete(id);
+    }
+    for (const seatId of seatsToRespawn) {
+      this.spawnAmbientCharacter(seatId);
     }
   }
 

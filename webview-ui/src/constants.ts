@@ -134,6 +134,36 @@ export const CHARACTER_HIT_HALF_WIDTH = 8;
 export const CHARACTER_HIT_HEIGHT = 24;
 export const TOOL_OVERLAY_VERTICAL_OFFSET = 32;
 
+// ── Ambient team characters ──────────────────────────────────
+/** IDs for ambient characters start at this offset to avoid colliding with real agent IDs */
+export const AMBIENT_ID_OFFSET = 10_000;
+/** Maps seat-tonone-<name> UIDs → display name for ambient character spawning */
+export const TONONE_TEAM_SEATS: Record<string, string> = {
+  'seat-tonone-apex': 'Apex',
+  'seat-tonone-helm': 'Helm',
+  'seat-tonone-forge': 'Forge',
+  'seat-tonone-relay': 'Relay',
+  'seat-tonone-spine': 'Spine',
+  'seat-tonone-flux': 'Flux',
+  'seat-tonone-warden': 'Warden',
+  'seat-tonone-vigil': 'Vigil',
+  'seat-tonone-prism': 'Prism',
+  'seat-tonone-cortex': 'Cortex',
+  'seat-tonone-touch': 'Touch',
+  'seat-tonone-volt': 'Volt',
+  'seat-tonone-atlas': 'Atlas',
+  'seat-tonone-lens': 'Lens',
+  'seat-tonone-proof': 'Proof',
+  'seat-tonone-pave': 'Pave',
+  'seat-tonone-echo': 'Echo',
+  'seat-tonone-lumen': 'Lumen',
+  'seat-tonone-draft': 'Draft',
+  'seat-tonone-form': 'Form',
+  'seat-tonone-crest': 'Crest',
+  'seat-tonone-pitch': 'Pitch',
+  'seat-tonone-surge': 'Surge',
+};
+
 // ── Agent Teams ─────────────────────────────────────────────
 export const MAX_CONTEXT_TOKENS = 200_000;
 export const TOKEN_WARN_THRESHOLD = 0.6;

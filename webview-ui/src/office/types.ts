@@ -180,6 +180,8 @@ export interface Character {
   matrixEffectSeeds: number[];
   /** Workspace folder name (only set for multi-root workspaces) */
   folderName?: string;
+  /** True for decorative team-member characters with no backing session */
+  isAmbient?: boolean;
 
   // -- Agent Teams --
   /** Team name this agent belongs to */
