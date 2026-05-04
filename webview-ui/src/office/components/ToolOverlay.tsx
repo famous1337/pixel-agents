@@ -11,11 +11,16 @@ import {
   FUEL_GAUGE_HEIGHT_PX,
   FUEL_GAUGE_WIDTH_PX,
   MAX_CONTEXT_TOKENS,
+  NAMEPLATE_TEXT_COLOR,
+  NAMEPLATE_TEXT_SHADOW,
+  NAMEPLATE_VERTICAL_OFFSET_PX,
   TEAM_LEAD_COLOR,
   TEAM_ROLE_COLOR,
   TOKEN_CRITICAL_THRESHOLD,
   TOKEN_DANGER_THRESHOLD,
   TOKEN_WARN_THRESHOLD,
+  TOOL_OVERLAY_BG_ACTIVE,
+  TOOL_OVERLAY_BG_PERMISSION,
   TOOL_OVERLAY_VERTICAL_OFFSET,
 } from '../../constants.js';
 import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js';
@@ -167,7 +172,13 @@ export function ToolOverlay({
         const tokenRatio = totalTokens / MAX_CONTEXT_TOKENS;
         const hasExtraLines = !!(ch.folderName || teamRoleLabel);
 
-        // Ambient characters: show only their name, dimmed when not hovered
+        const panelBg = hasPermission
+          ? TOOL_OVERLAY_BG_PERMISSION
+          : isActive && hasActiveTools
+            ? TOOL_OVERLAY_BG_ACTIVE
+            : undefined;
+
+        // Ambient characters: always show their name as a dimmed pixel-panel label
         if (isAmbient) {
           return (
             <div
@@ -190,6 +201,34 @@ export function ToolOverlay({
           );
         }
 
+        // Always-on non-focused: render a small floating nameplate instead of the full panel
+        const isAlwaysOnUnfocused = alwaysShowOverlay && !isSelected && !isHovered;
+        const nameplateText = isSub ? activityText : (ch.agentName ?? ch.folderName ?? null);
+
+        if (isAlwaysOnUnfocused) {
+          if (!nameplateText) return null;
+          const nameplateY =
+            (deviceOffsetY + (ch.y + sittingOffset - NAMEPLATE_VERTICAL_OFFSET_PX) * zoom) / dpr;
+          return (
+            <div
+              key={id}
+              className="absolute -translate-x-1/2 pointer-events-none"
+              style={{ left: screenX, top: nameplateY, zIndex: 41 }}
+            >
+              <span
+                className="whitespace-nowrap leading-none block text-center"
+                style={{
+                  fontSize: '10px',
+                  color: NAMEPLATE_TEXT_COLOR,
+                  textShadow: NAMEPLATE_TEXT_SHADOW,
+                }}
+              >
+                {nameplateText}
+              </span>
+            </div>
+          );
+        }
+
         return (
           <div
             key={id}
@@ -202,14 +241,22 @@ export function ToolOverlay({
               zIndex: isSelected ? 42 : 41,
             }}
           >
-            <div className="flex items-center border-border px-8 pt-2 pb-4 gap-5 pixel-panel whitespace-nowrap max-w-2xs">
+            <div
+              className="flex items-center border-border px-8 pt-2 pb-4 gap-5 pixel-panel whitespace-nowrap max-w-2xs"
+              title={activityText}
+              style={{
+                borderLeftColor: dotColor ?? undefined,
+                borderLeftWidth: dotColor ? '2px' : undefined,
+                background: panelBg,
+              }}
+            >
               {dotColor && (
                 <span
                   className={`w-6 h-6 rounded-full shrink-0 ${isActive && !hasPermission ? 'pixel-pulse' : ''}`}
                   style={{ background: dotColor }}
                 />
               )}
-              <div className="flex flex-col gap-0 overflow-hidden">
+              <div className="flex flex-col overflow-hidden">
                 {teamRoleLabel && (
                   <span
                     className="overflow-hidden text-ellipsis block leading-none"

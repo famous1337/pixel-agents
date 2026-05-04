@@ -116,6 +116,7 @@ export function BottomToolbar({
           ))}
         </Dropdown>
       </div>
+      <div className="w-2 self-stretch border-l-2 border-border" />
       <Button
         variant={isEditMode ? 'active' : 'default'}
         onClick={onToggleEditMode}

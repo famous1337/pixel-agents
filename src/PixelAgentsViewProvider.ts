@@ -499,7 +499,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
         );
         const alwaysShowLabels = this.context.globalState.get<boolean>(
           GLOBAL_KEY_ALWAYS_SHOW_LABELS,
-          false,
+          true,
         );
         this.watchAllSessions.current = watchAllSessions;
         const hooksEnabled = this.context.globalState.get<boolean>(GLOBAL_KEY_HOOKS_ENABLED, true);
