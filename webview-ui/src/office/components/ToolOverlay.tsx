@@ -188,7 +188,7 @@ export function ToolOverlay({
                 left: screenX,
                 top: screenY - 28,
                 pointerEvents: 'none',
-                opacity: isHovered ? 1 : 0.55,
+                opacity: 1,
                 zIndex: 40,
               }}
             >

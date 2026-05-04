@@ -12,6 +12,8 @@ import {
   INACTIVE_SEAT_TIMER_MIN_SEC,
   INACTIVE_SEAT_TIMER_RANGE_SEC,
   TONONE_TEAM_SEATS,
+  TURN_END_SEAT_REST_MAX_SEC,
+  TURN_END_SEAT_REST_MIN_SEC,
   WAITING_BUBBLE_DURATION_SEC,
 } from '../../constants.js';
 import { getAnimationFrames, getCatalogEntry, getOnStateType } from '../layout/furnitureCatalog.js';
@@ -623,9 +625,9 @@ export class OfficeState {
     if (ch) {
       ch.isActive = active;
       if (!active) {
-        // Sentinel -1: signals turn just ended, skip next seat rest timer.
-        // Prevents the WALK handler from setting a 2-4 min rest on arrival.
-        ch.seatTimer = -1;
+        ch.seatTimer =
+          TURN_END_SEAT_REST_MIN_SEC +
+          Math.random() * (TURN_END_SEAT_REST_MAX_SEC - TURN_END_SEAT_REST_MIN_SEC);
         ch.path = [];
         ch.moveProgress = 0;
       }

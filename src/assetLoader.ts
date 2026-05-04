@@ -465,6 +465,17 @@ export async function loadExternalCharacterSprites(
       }
       try {
         const pngBuffer = fs.readFileSync(filePath);
+        // Validate dimensions from PNG header (bytes 16-23, big-endian)
+        const w = pngBuffer.readUInt32BE(16);
+        const h = pngBuffer.readUInt32BE(20);
+        const expectedW = CHAR_FRAMES_PER_ROW * 16; // 112
+        const expectedH = 3 * 32; // 96 (3 directions × 32px)
+        if (w !== expectedW || h !== expectedH) {
+          console.warn(
+            `  [AssetLoader] ⚠️  Skipping ${filename}: expected ${expectedW}×${expectedH}, got ${w}×${h}`,
+          );
+          continue;
+        }
         characters.push(decodeCharacterPng(pngBuffer));
       } catch (err) {
         console.warn(
