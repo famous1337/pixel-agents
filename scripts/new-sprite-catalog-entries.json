@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ARCADE_CABINET",
+    "name": "ARCADE_CABINET",
+    "label": "Arcade Cabinet",
+    "category": "decor",
+    "footprint": [[0, 0], [0, 1]],
+    "isDesk": false,
+    "canPlaceOnWalls": false,
+    "backgroundTiles": 1
+  },
+  {
+    "id": "WALL_SCREEN",
+    "name": "WALL_SCREEN",
+    "label": "Wall Screen",
+    "category": "wall",
+    "footprint": [[0, 0], [1, 0]],
+    "isDesk": false,
+    "canPlaceOnWalls": true,
+    "backgroundTiles": 0
+  }
+]

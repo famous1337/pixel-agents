@@ -1,0 +1,13 @@
+{
+    "id":  "TONONE_DATA_TOWER",
+    "name":  "Data Tower",
+    "category":  "electronics",
+    "type":  "asset",
+    "canPlaceOnWalls":  false,
+    "canPlaceOnSurfaces":  false,
+    "backgroundTiles":  0,
+    "width":  16,
+    "height":  32,
+    "footprintW":  1,
+    "footprintH":  2
+}
