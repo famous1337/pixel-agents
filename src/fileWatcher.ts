@@ -227,7 +227,10 @@ export function isTrackedProjectDir(dir: string): boolean {
   // Case-insensitive fallback for Windows (drive letter casing: c:\ vs C:\)
   const resolved = path.resolve(dir).toLowerCase();
   for (const tracked of trackedProjectDirs) {
-    if (path.resolve(tracked).toLowerCase() === resolved) return true;
+    const trackedResolved = path.resolve(tracked).toLowerCase();
+    if (trackedResolved === resolved) return true;
+    // Accept subdirectories of tracked dirs (e.g. subagents/ under the project hash dir)
+    if (resolved.startsWith(trackedResolved + path.sep)) return true;
   }
   return false;
 }
@@ -845,7 +848,25 @@ export function adoptExternalSessionFromHook(
 
     knownJsonlFiles.add(transcriptPath);
     const projectDir = path.dirname(transcriptPath);
-    const folderName = folderNameFromProjectDir(path.basename(projectDir));
+    // Walk up from transcript dir to find the actual tracked project root for the display label.
+    // Sub-agent JSONLs land in subagents/ under the real project hash dir.
+    let labelDir = projectDir;
+    {
+      let cur = projectDir;
+      outer: while (true) {
+        const curNorm = path.resolve(cur).toLowerCase();
+        for (const t of trackedProjectDirs) {
+          if (path.resolve(t).toLowerCase() === curNorm) {
+            labelDir = cur;
+            break outer;
+          }
+        }
+        const up = path.dirname(cur);
+        if (up === cur) break;
+        cur = up;
+      }
+    }
+    const folderName = folderNameFromProjectDir(path.basename(labelDir));
 
     adoptExternalSession(
       transcriptPath,
