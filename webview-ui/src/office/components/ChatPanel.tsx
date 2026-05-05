@@ -197,6 +197,21 @@ export function ChatPanel({ officeState, agents, chatHistory, selectedAgent }: C
 }
 
 function ChatBubble({ msg }: { msg: ChatMessage }) {
+  if (msg.role === 'system') {
+    return (
+      <div
+        style={{
+          fontSize: '10px',
+          color: 'var(--color-warning)',
+          textAlign: 'center',
+          padding: '4px 0 6px',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {msg.text}
+      </div>
+    );
+  }
   const isUser = msg.role === 'user';
   return (
     <div style={{ marginBottom: 10 }}>
@@ -221,7 +236,9 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
           maxHeight: 240,
           overflowY: 'auto',
           paddingLeft: 8,
-          borderLeft: `2px solid ${isUser ? 'var(--color-accent)' : 'var(--color-status-active)'}`,
+          borderLeft: isUser
+            ? '2px solid var(--color-accent)'
+            : '2px solid var(--color-status-active)',
         }}
       >
         {msg.text}

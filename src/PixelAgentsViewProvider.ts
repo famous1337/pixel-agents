@@ -772,13 +772,23 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
         const agentId = message.id as number;
         const text = message.text as string;
         const agent = this.agents.get(agentId);
-        if (agent?.terminalRef) {
-          agent.terminalRef.sendText(text);
-        } else if (agent?.leadAgentId !== undefined) {
-          const lead = this.agents.get(agent.leadAgentId);
-          if (lead?.terminalRef) {
-            lead.terminalRef.sendText(text);
-          }
+        // Always echo the user message immediately for instant feedback
+        this.webview?.postMessage({ type: 'agentChatMessage', id: agentId, role: 'user', text });
+        const terminalToUse =
+          agent?.terminalRef ??
+          (agent?.leadAgentId !== undefined
+            ? this.agents.get(agent.leadAgentId)?.terminalRef
+            : undefined);
+        if (terminalToUse) {
+          terminalToUse.sendText(text);
+        } else {
+          // No VS Code terminal — agent is running externally
+          this.webview?.postMessage({
+            type: 'agentChatMessage',
+            id: agentId,
+            role: 'system',
+            text: `This agent is running in an external terminal. Paste the message above into that terminal to send it.`,
+          });
         }
       } else if (message.type === 'importLayout') {
         const uris = await vscode.window.showOpenDialog({

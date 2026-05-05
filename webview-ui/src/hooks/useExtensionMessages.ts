@@ -19,7 +19,7 @@ export interface SubagentCharacter {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   text: string;
   timestamp: number;
 }
@@ -331,10 +331,21 @@ export function useExtensionMessages(
         os.clearPermissionBubble(id);
       } else if (msg.type === 'agentChatMessage') {
         const id = msg.id as number;
-        const role = msg.role as 'user' | 'assistant';
+        const role = msg.role as 'user' | 'assistant' | 'system';
         const text = msg.text as string;
         setChatHistory((prev) => {
           const history = prev[id] ?? [];
+          // Dedup: the extension echoes user messages immediately; skip if JSONL
+          // delivers the same text within 10s to avoid showing it twice.
+          const last = history[history.length - 1];
+          if (
+            last &&
+            last.role === role &&
+            last.text === text &&
+            Date.now() - last.timestamp < 10_000
+          ) {
+            return prev;
+          }
           const updated = [...history, { role, text, timestamp: Date.now() }];
           return { ...prev, [id]: updated.slice(-200) };
         });
