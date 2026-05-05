@@ -157,8 +157,24 @@ export function processTranscriptLine(
         id?: string;
         name?: string;
         input?: Record<string, unknown>;
+        text?: string;
       }>;
       const hasToolUse = blocks.some((b) => b.type === 'tool_use');
+
+      // Forward text content to the chat panel
+      const textContent = blocks
+        .filter((b) => b.type === 'text' && typeof b.text === 'string')
+        .map((b) => b.text as string)
+        .join('\n')
+        .trim();
+      if (textContent) {
+        webview?.postMessage({
+          type: 'agentChatMessage',
+          id: agentId,
+          role: 'assistant',
+          text: textContent,
+        });
+      }
 
       if (hasToolUse) {
         cancelWaitingTimer(agentId, waitingTimers);
@@ -313,6 +329,12 @@ export function processTranscriptLine(
         }
       } else if (typeof content === 'string' && content.trim()) {
         // New user text prompt — new turn starting
+        webview?.postMessage({
+          type: 'agentChatMessage',
+          id: agentId,
+          role: 'user',
+          text: content,
+        });
         cancelWaitingTimer(agentId, waitingTimers);
         clearAgentActivity(agent, agentId, permissionTimers, webview);
         agent.hadToolsInTurn = false;

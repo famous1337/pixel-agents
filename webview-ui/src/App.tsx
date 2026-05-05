@@ -14,6 +14,7 @@ import { ZoomControls } from './components/ZoomControls.js';
 import { useEditorActions } from './hooks/useEditorActions.js';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard.js';
 import { useExtensionMessages } from './hooks/useExtensionMessages.js';
+import { ChatPanel } from './office/components/ChatPanel.js';
 import { OfficeCanvas } from './office/components/OfficeCanvas.js';
 import { StatusPanel } from './office/components/StatusPanel.js';
 import { ToolOverlay } from './office/components/ToolOverlay.js';
@@ -59,6 +60,7 @@ function App() {
     agentStatuses,
     subagentTools,
     subagentCharacters,
+    chatHistory,
     layoutReady,
     layoutWasReset,
     loadedAssets,
@@ -257,6 +259,13 @@ function App() {
             agentTools={agentTools}
             subagentCharacters={subagentCharacters}
             onSelectAgent={handleSelectAgent}
+          />
+
+          <ChatPanel
+            officeState={officeState}
+            agents={agents}
+            chatHistory={chatHistory}
+            selectedAgent={selectedAgent}
           />
         </>
       ) : (

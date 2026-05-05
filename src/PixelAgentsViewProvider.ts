@@ -768,6 +768,18 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
           type: 'externalAssetDirectoriesUpdated',
           dirs: cfg.externalAssetDirectories,
         });
+      } else if (message.type === 'sendMessageToAgent') {
+        const agentId = message.id as number;
+        const text = message.text as string;
+        const agent = this.agents.get(agentId);
+        if (agent?.terminalRef) {
+          agent.terminalRef.sendText(text);
+        } else if (agent?.leadAgentId !== undefined) {
+          const lead = this.agents.get(agent.leadAgentId);
+          if (lead?.terminalRef) {
+            lead.terminalRef.sendText(text);
+          }
+        }
       } else if (message.type === 'importLayout') {
         const uris = await vscode.window.showOpenDialog({
           filters: { 'JSON Files': ['json'] },

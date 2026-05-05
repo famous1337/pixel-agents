@@ -18,6 +18,12 @@ export interface SubagentCharacter {
   label: string;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: number;
+}
+
 interface FurnitureAsset {
   id: string;
   name: string;
@@ -53,6 +59,7 @@ interface ExtensionMessageState {
   agentStatuses: Record<number, string>;
   subagentTools: Record<number, Record<string, ToolActivity[]>>;
   subagentCharacters: SubagentCharacter[];
+  chatHistory: Record<number, ChatMessage[]>;
   layoutReady: boolean;
   layoutWasReset: boolean;
   loadedAssets?: { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> };
@@ -103,6 +110,7 @@ export function useExtensionMessages(
   const [alwaysShowLabels, setAlwaysShowLabels] = useState(false);
   const [hooksEnabled, setHooksEnabled] = useState(true);
   const [hooksInfoShown, setHooksInfoShown] = useState(true);
+  const [chatHistory, setChatHistory] = useState<Record<number, ChatMessage[]>>({});
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false);
@@ -196,6 +204,12 @@ export function useExtensionMessages(
           return next;
         });
         setSubagentTools((prev) => {
+          if (!(id in prev)) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setChatHistory((prev) => {
           if (!(id in prev)) return prev;
           const next = { ...prev };
           delete next[id];
@@ -315,6 +329,15 @@ export function useExtensionMessages(
         }
         os.setAgentTool(id, null);
         os.clearPermissionBubble(id);
+      } else if (msg.type === 'agentChatMessage') {
+        const id = msg.id as number;
+        const role = msg.role as 'user' | 'assistant';
+        const text = msg.text as string;
+        setChatHistory((prev) => {
+          const history = prev[id] ?? [];
+          const updated = [...history, { role, text, timestamp: Date.now() }];
+          return { ...prev, [id]: updated.slice(-200) };
+        });
       } else if (msg.type === 'agentSelected') {
         const id = msg.id as number;
         setSelectedAgent(id);
@@ -521,6 +544,7 @@ export function useExtensionMessages(
     agentStatuses,
     subagentTools,
     subagentCharacters,
+    chatHistory,
     layoutReady,
     layoutWasReset,
     loadedAssets,
